@@ -1,0 +1,8 @@
+{
+  "name": "GuardiaFire Forest Tactical",
+  "description": "Tactical LoRa monitoring station for forest fire prevention in Concordia, Entre Ríos.",
+  "requestFramePermissions": [
+    "serial"
+  ],
+  "majorCapabilities": []
+}

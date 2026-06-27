@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuardiaFire - Estación de Monitoreo IoT</title>
+    
+    <!-- Leaflet.js CDN para Cartografía en Tiempo Real -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Tipografía Profesional del Sistema -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Iconos de Material Design -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Rounded" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #090D16;
+            --panel-bg: #0F172A;
+            --card-bg: #1E293B;
+            --accent-blue: #3B82F6;
+            --accent-green: #10B981;
+            --accent-orange: #F59E0B;
+            --alert-red: #EF4444;
+            --font-main: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #F1F5F9;
+            font-family: var(--font-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Banner de Alerta Crítica (Solo visible ante peligro real) */
+        #emergency-banner {
+            display: none;
+            background-color: var(--alert-red);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: 800;
+            font-size: 1rem;
+            letter-spacing: 1.5px;
+            z-index: 5000;
+            border-bottom: 2px solid white;
+        }
+
+        /* Contenedor Principal de la Estación */
+        .app-container {
+            display: flex;
+            flex: 1;
+            height: 100%;
+            width: 100vw;
+            position: relative;
+        }
+
+        /* PANEL IZQUIERDO: Control Serial y Datos de Telemetría Real */
+        .sidebar {
+            width: 360px;
+            min-width: 360px;
+            background-color: var(--panel-bg);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #FFFFFF;
+        }
+
+        .header-subtitle {
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--accent-green);
+            letter-spacing: 1.2px;
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+
+        .divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 12px 0;
+            width: 100%;
+        }
+
+        /* Tarjetas de Datos de Alta Legibilidad */
+        .data-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .title-blue {
+            color: var(--accent-blue);
+        }
+
+        .title-orange {
+            color: var(--accent-orange);
+        }
+
+        .status-badge {
+            font-size: 8px;
+            font-weight: 800;
+            padding: 3px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .status-disconnected {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #FA5252;
+        }
+
+        .status-connecting {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: #FAB005;
+        }
+
+        .status-connected {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #12B886;
+        }
+
+        /* Botón de Enlace Físico */
+        .action-btn {
+            background-color: var(--accent-blue);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.15s ease-in-out;
+            width: 100%;
+        }
+
+        .action-btn:hover {
+            background-color: #2563EB;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .action-btn:active {
+            transform: scale(0.98);
+        }
+
+        .card-footer {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        /* Métricas de Telemetría Real */
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .metric-value {
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .metric-value.mono {
+            font-family: var(--font-mono);
+        }
+
+        /* Estado del GPS Real */
+        .gps-status {
+            font-size: 9px;
+            font-weight: 800;
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .gps-searching {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: var(--accent-orange);
+        }
+
+        .gps-fixed {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+        }
+
+        /* Consola de Radiofrecuencia Lora / Puerto Serie */
+        .console-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .console-box {
+            flex: 1;
+            background-color: #030712;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column-reverse; /* Comportamiento de terminal ascendente */
+            font-family: var(--font-mono);
+            font-size: 10px;
+            line-height: 1.4;
+            gap: 6px;
+        }
+
+        .log-item {
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .log-sys { color: #60A5FA; }
+        .log-con { color: #34D399; }
+        .log-err { color: #F87171; }
+        .log-raw { color: #E2E8F0; }
+
+        /* PANEL DERECHO: Cartografía (Leaflet) */
+        .map-wrapper {
+            flex: 1;
+            height: 100%;
+            position: relative;
+        }
+
+        #map-leaflet {
+            width: 100%;
+            height: 100%;
+            background-color: #0B0F19;
+        }
+
+        /* Controles Flotantes Minimistas */
+        .carto-controls {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background-color: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .carto-btn {
+            background: transparent;
+            border: none;
+            width: 36px;
+            height: 36px;
+            color: #FFFFFF;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: background 0.15s ease;
+        }
+
+        .carto-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .carto-divider {
+            height: 1px;
+            background-color: rgba(255, 255, 255, 0.15);
+            margin: 4px 6px;
+        }
+
+        /* Botón de control acústico de Sirena */
+        .siren-control {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            z-index: 1000;
+            background-color: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #FFFFFF;
+            border-radius: 30px;
+            padding: 10px 18px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .siren-control:hover {
+            transform: translateY(-2px);
+            background-color: var(--card-bg);
+        }
+
+        .siren-control.muted {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #F87171;
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        /* Marcador Pulsante del GPS Físico en Leaflet */
+        .gps-marker-container {
+            position: relative;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gps-pulse-ring {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            opacity: 0.4;
+            animation: ring-pulse 1.8s infinite linear;
+        }
+
+        .gps-pulse-ring.danger {
+            background-color: var(--alert-red) !important;
+        }
+
+        .gps-marker-core {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #10B981;
+            box-shadow: 0 0 10px #10B981;
+        }
+
+        .gps-marker-core.danger {
+            background-color: var(--alert-red) !important;
+            box-shadow: 0 0 12px var(--alert-red) !important;
+        }
+
+        @keyframes ring-pulse {
+            0% { transform: scale(0.3); opacity: 0.8; }
+            50% { opacity: 0.4; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        /* Estilización de los Popups en Leaflet */
+        .leaflet-popup-content-wrapper {
+            background-color: var(--panel-bg) !important;
+            color: #F8FAFC !important;
+            border: 1px solid var(--accent-blue) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5) !important;
+            padding: 0 !important;
+            overflow: hidden;
+        }
+
+        .leaflet-popup-content-wrapper.danger {
+            border-color: var(--alert-red) !important;
+        }
+
+        /* Alerta visual para el contenedor Leaflet real de popup */
+        .leaflet-popup-alert .leaflet-popup-content-wrapper {
+            border: 2.5px solid var(--alert-red) !important;
+            box-shadow: 0 0 16px rgba(239, 68, 68, 0.55) !important;
+        }
+
+        .leaflet-popup-alert .leaflet-popup-tip {
+            border-left: 2.5px solid var(--alert-red) !important;
+            border-bottom: 2.5px solid var(--alert-red) !important;
+        }
+
+        .leaflet-popup-content {
+            margin: 0 !important;
+            padding: 12px 14px !important;
+        }
+
+        .leaflet-popup-tip {
+            background-color: var(--panel-bg) !important;
+            border-left: 1px solid var(--accent-blue) !important;
+            border-bottom: 1px solid var(--accent-blue) !important;
+        }
+
+        .leaflet-popup-tip.danger {
+            border-left-color: var(--alert-red) !important;
+            border-bottom-color: var(--alert-red) !important;
+        }
+
+        .popup-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            padding-bottom: 6px;
+        }
+
+        .popup-title {
+            font-size: 11px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--accent-green);
+        }
+
+        .popup-title.danger {
+            color: var(--alert-red);
+        }
+
+        .popup-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            padding: 3px 0;
+            font-family: var(--font-mono);
+        }
+
+        .popup-label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .popup-val {
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        /* Estilos de Sensores Auténticos DS16B20, MQ-5 y LoRa RSSI */
+        .sensor-widget {
+            margin-bottom: 14px;
+        }
+
+        .sensor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .sensor-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sensor-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.85);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .sensor-icon {
+            font-size: 16px !important;
+        }
+
+        .sensor-value {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .text-blue { color: var(--accent-blue) !important; }
+        .text-green { color: var(--accent-green) !important; }
+        .text-orange { color: var(--accent-orange) !important; }
+        .text-red { color: var(--alert-red) !important; }
+
+        .meter-bar {
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .meter-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 3px;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        .bg-blue { background-color: var(--accent-blue) !important; }
+        .bg-green { background-color: var(--accent-green) !important; }
+        .bg-orange { background-color: var(--accent-orange) !important; }
+        .bg-red { background-color: var(--alert-red) !important; }
+
+        .sensor-meta {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Sección de Tendencia Temporal (Sparkline SVG) */
+        .trend-section {
+            background-color: rgba(0, 0, 0, 0.22);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .trend-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .trend-title {
+            font-size: 9px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .trend-svg-container {
+            width: 100%;
+            height: 55px;
+            background-color: rgba(3, 7, 18, 0.45);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .trend-legend {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 6px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Banner contra Incendio Forestal Activo -->
+    <div id="emergency-banner">
+        <span>🚨 !!! DETECTADO FUEGO / GAS EXTREMO EN EL NODO FORESTAL !!! 🚨</span>
+    </div>
+
+    <div class="app-container">
+        
+        <!-- PANEL LATERAL: Interfaces de Recepción Real -->
+        <aside class="sidebar">
+            <div class="header-section">
+                <span class="header-title">GUARDIAFIRE</span>
+                <span class="header-subtitle">Estación Base LoRa de Campo</span>
+            </div>
+            
+            <div class="divider"></div>
+
+            <!-- Panel de Conexión USB Serie -->
+            <div class="data-card">
+                <div class="card-header">
+                    <span class="title-blue">RECEPTOR USB SERIE (UART)</span>
+                    <span class="status-badge status-disconnected" id="badge-serial">Desconectado</span>
+                </div>
+                
+                <button class="action-btn" id="btn-serial-action" onclick="togglePhysicalSerial()">
+                    <span class="material-icons-rounded" style="font-size: 18px;">usb</span>
+                    CONECTAR PUERTO
+                </button>
+                
+                <span class="card-footer">Velocidad fija: 115200 bps</span>
+            </div>
+
+            <!-- Datos Físicos Reales Recibidos -->
+            <div class="data-card" id="telemetry-card" style="display: none;">
+                <div class="card-header" style="margin-bottom: 12px;">
+                    <span class="title-orange" style="font-weight: 800;">TELEMETRÍA DEL NODO</span>
+                    <span class="gps-status gps-searching" id="badge-gps">Esperando GPS</span>
+                </div>
+
+                <div class="metric-row" style="padding-top: 0; padding-bottom: 8px;">
+                    <span class="metric-label">ID del Dispositivo:</span>
+                    <span class="metric-value mono text-blue" id="v-node-id" style="font-size: 13px;">---</span>
+                </div>
+
+                <!-- DS16B20 Temperatura Float -->
+                <div class="sensor-widget">
+                    <div class="sensor-header">
+                        <div class="sensor-title-wrapper">
+                            <span class="material-icons-rounded sensor-icon text-orange" id="icon-temp">thermostat</span>
+                            <span class="sensor-title">Temp (DS16B20)</span>
+                        </div>
+                        <span class="sensor-value text-orange" id="v-temp">--.- °C</span>
+                    </div>
+                    <div class="meter-bar">
+                        <div class="meter-fill bg-orange" id="bar-temp" style="width: 0%"></div>
+                    </div>
+                    <div class="sensor-meta">
+                        <span>Límite Seguro: 40.0 °C</span>
+                        <span id="label-temp-status" style="font-weight: 700;">Normal</span>
+                    </div>
+                </div>
+
+                <!-- MQ-5 Humo/Gas Int -->
+                <div class="sensor-widget">
+                    <div class="sensor-header">
+                        <div class="sensor-title-wrapper">
+                            <span class="material-icons-rounded sensor-icon text-green" id="icon-smoke">cloud</span>
+                            <span class="sensor-title">Humo / Gas (MQ-5)</span>
+                        </div>
+                        <span class="sensor-value text-green" id="v-smoke">-- PPM</span>
+                    </div>
+                    <div class="meter-bar">
+                        <div class="meter-fill bg-green" id="bar-smoke" style="width: 0%"></div>
+                    </div>
+                    <div class="sensor-meta">
+                        <span>Límite Seguro: 700 PPM</span>
+                        <span id="label-smoke-status" style="font-weight: 700;">Aire Limpio</span>
+                    </div>
+                </div>
+
+                <!-- LoRa RSSI Inyectado -->
+                <div class="sensor-widget">
+                    <div class="sensor-header">
+                        <div class="sensor-title-wrapper">
+                            <span class="material-icons-rounded sensor-icon text-blue">signal_cellular_alt</span>
+                            <span class="sensor-title">Señal LoRa (RSSI)</span>
+                        </div>
+                        <span class="sensor-value text-blue" id="v-rssi">--- dBm</span>
+                    </div>
+                    <div class="meter-bar">
+                        <div class="meter-fill bg-blue" id="bar-rssi" style="width: 0%"></div>
+                    </div>
+                    <div class="sensor-meta">
+                        <span id="label-rssi-status">Excelente</span>
+                        <span id="v-voltage" class="mono" style="color: rgba(255,255,255,0.7); font-weight: 700;">--.- V</span>
+                    </div>
+                </div>
+
+                <!-- Posición GPS Real -->
+                <div class="metric-row" id="gps-coords-row" style="display: none; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+                    <span class="metric-label">Posición GPS:</span>
+                    <span class="metric-value mono" id="v-coords" style="color: var(--accent-green); font-size: 11px;">---</span>
+                </div>
+
+                <!-- Sparkline de Tendencia de Producción -->
+                <div class="trend-section">
+                    <div class="trend-header-row">
+                        <span class="trend-title">Gráfica de Tendencia (Línea de Tiempo)</span>
+                        <span class="mono" style="font-size: 8px; color: rgba(255,255,255,0.35);">15 Puntos</span>
+                    </div>
+                    <div class="trend-svg-container">
+                        <svg viewBox="0 0 300 55" preserveAspectRatio="none" style="width: 100%; height: 100%; display: block;">
+                            <!-- Gridlines de referencia -->
+                            <line x1="0" y1="13.75" x2="300" y2="13.75" stroke="rgba(255,255,255,0.05)" stroke-width="1"></line>
+                            <line x1="0" y1="27.5" x2="300" y2="27.5" stroke="rgba(255,255,255,0.05)" stroke-width="1"></line>
+                            <line x1="0" y1="41.25" x2="300" y2="41.25" stroke="rgba(255,255,255,0.05)" stroke-width="1"></line>
+                            
+                            <!-- Trazados dinámicos -->
+                            <path id="path-temp" fill="none" stroke="#F59E0B" stroke-width="2" d="M 0 55"></path>
+                            <path id="path-smoke" fill="none" stroke="#10B981" stroke-width="1.5" stroke-dasharray="2,1" d="M 0 55"></path>
+                        </svg>
+                    </div>
+                    <div class="trend-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot" style="background-color: var(--accent-orange);"></span>
+                            <span>Temp DS16B20</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot" style="background-color: var(--accent-green);" id="legend-dot-smoke"></span>
+                            <span>Humo MQ-5</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal para monitoreo de tramas RAW -->
+            <div class="console-label">
+                <span class="material-icons-rounded" style="font-size: 12px; color: var(--accent-blue);">terminal</span>
+                <span>MONITOR SERIE RAW</span>
+            </div>
+            
+            <div class="console-box" id="serial-terminal">
+                <!-- Log centralizado de tramas reales -->
+            </div>
+        </aside>
+
+        <!-- PANEL CARTOGRÁFICO -->
+        <main class="map-wrapper">
+            <div id="map-leaflet"></div>
+
+            <!-- Botones Flotantes de Navegación -->
+            <div class="carto-controls">
+                <button class="carto-btn" title="Acercar" onclick="mapZoomIn()">
+                    <span class="material-icons-rounded">add</span>
+                </button>
+                <button class="carto-btn" title="Alejar" onclick="mapZoomOut()">
+                    <span class="material-icons-rounded">remove</span>
+                </button>
+                <div class="carto-divider"></div>
+                <button class="carto-btn" title="Recentrar Concordia" onclick="mapRecenter()">
+                    <span class="material-icons-rounded">my_location</span>
+                </button>
+            </div>
+
+            <!-- Control acústico de emergencias -->
+            <button class="siren-control" id="btn-siren" onclick="togglePhysicalSiren()">
+                <span class="material-icons-rounded" id="siren-icon">volume_up</span>
+                <span id="siren-text">SIRENA LISTA</span>
+            </button>
+        </main>
+
+    </div>
+
+    <script>
+        // Coordenadas fijas Concordia, Entre Ríos, Argentina
+        const concordiaCoords = [-31.3750, -58.0069];
+        let map = null;
+        let nodeMarker = null;
+
+        // Estructura de Telemetría Real en caché
+        let deviceState = {
+            id: null,
+            lat: 0.0,
+            lng: 0.0,
+            temp: 0.0,
+            humo: 0,
+            voltage: 0.0,
+            rssi: 0,
+            hasGps: false
+        };
+
+        // Búfer histórico para el sparkline en tiempo real
+        let historyBuffer = [];
+        const maxHistoryPoints = 15;
+
+        // Estado sónico
+        let isMuted = false;
+        let isSirenPlaying = false;
+        let audioCtx = null;
+        let osc = null;
+        let gainNode = null;
+        let sirenIntervalId = null;
+
+        // Puerto serial
+        let serialPort = null;
+        let serialReader = null;
+        let statusSerial = "Desconectado"; // Desconectado, Conectando, Conectado
+        let lastRawSerialLine = "Esperando tramas...";
+
+        const logs = [
+            "[SISTEMA] Estación GuardiaFire iniciada en producción.",
+            "[AYUDA] Conecte el receptor LilyGO T-Beam / ESP32 mediante USB y presione 'CONECTAR PUERTO'."
+        ];
+
+        // Arrancar Leaflet en carga del DOM
+        function initStationMap() {
+            try {
+                map = L.map('map-leaflet', {
+                    center: concordiaCoords,
+                    zoom: 14,
+                    zoomControl: false,
+                    attributionControl: false
+                });
+
+                // Mapa de fondo
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19
+                }).addTo(map);
+
+                // Etiquetas de contraste oscuras
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
+                    maxZoom: 20,
+                    opacity: 0.8
+                }).addTo(map);
+
+                renderTerminal();
+            } catch (err) {
+                console.error("Fallo estructurando mapa Leaflet: ", err);
+            }
+        }
+
+        // Navegación de mapa
+        function mapZoomIn() { if (map) map.setZoom(Math.min(map.getZoom() + 1, 19)); }
+        function mapZoomOut() { if (map) map.setZoom(Math.max(map.getZoom() - 1, 1)); }
+        
+        function mapRecenter() {
+            if (!map) return;
+            if (deviceState.hasGps) {
+                map.setView([deviceState.lat, deviceState.lng], 15);
+                if (nodeMarker) nodeMarker.openPopup();
+            } else {
+                map.setView(concordiaCoords, 14);
+                addLog("[SISTEMA] Centrando mapa en Concordia, ER (Falta fijación GPS real).");
+            }
+        }
+
+        // Utilidad de Logs en terminal
+        function addLog(text, type = "sys") {
+            logs.push(text);
+            if (logs.length > 60) logs.shift();
+            // Si es una línea de telecomunicaciones de radio (con prefijo de antena), guardamos la trama limpia
+            if (text.startsWith("📻")) {
+                lastRawSerialLine = text.replace("📻", "").trim();
+            }
+            renderTerminal();
+        }
+
+        function renderTerminal() {
+            const terminal = document.getElementById("serial-terminal");
+            if (!terminal) return;
+
+            terminal.innerHTML = logs.map(line => {
+                let css = "log-raw";
+                if (line.startsWith("[SISTEMA]")) css = "log-sys";
+                else if (line.startsWith("[CONEXIÓN]")) css = "log-con";
+                else if (line.startsWith("[ERROR]") || line.startsWith("[FALTA]")) css = "log-err";
+
+                const safeText = line.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                return `<div class="log-item ${css}">${safeText}</div>`;
+            }).reverse().join("");
+        }
+
+        // Función para renderizar gráficos en miniatura SVG (Sparkline de Tendencias)
+        function updateHistoricalSparkline() {
+            const pathTemp = document.getElementById("path-temp");
+            const pathSmoke = document.getElementById("path-smoke");
+            if (!pathTemp || !pathSmoke) return;
+
+            if (historyBuffer.length === 0) {
+                pathTemp.setAttribute("d", "M 0 55");
+                pathSmoke.setAttribute("d", "M 0 55");
+                return;
+            }
+
+            const pointsCount = historyBuffer.length;
+            let tempD = "";
+            let smokeD = "";
+
+            for (let i = 0; i < pointsCount; i++) {
+                const point = historyBuffer[i];
+                // X escalado proporcional a 300px divididos en los puntos acumulados
+                const x = pointsCount > 1 ? (i / (pointsCount - 1)) * 300 : 0;
+                
+                // Mapear temperatura (Rango 15 - 65 °C con márgenes confort)
+                const tempMin = 15;
+                const tempMax = 65;
+                const mappedTempRatio = Math.max(0, Math.min(1, (point.temp - tempMin) / (tempMax - tempMin)));
+                const yTemp = 55 - (mappedTempRatio * 49) - 3; // Rango de Y útil de 3 a 52px para no salirse de la caja
+
+                // Mapear humo MQ-5 (Rango 0 - 1200 PPM)
+                const smokeMax = 1200;
+                const mappedSmokeRatio = Math.max(0, Math.min(1, point.humo / smokeMax));
+                const ySmoke = 55 - (mappedSmokeRatio * 49) - 3;
+
+                if (i === 0) {
+                    tempD = `M ${x.toFixed(1)} ${yTemp.toFixed(1)}`;
+                    smokeD = `M ${x.toFixed(1)} ${ySmoke.toFixed(1)}`;
+                    if (pointsCount === 1) {
+                        tempD += ` L 300 ${yTemp.toFixed(1)}`;
+                        smokeD += ` L 300 ${ySmoke.toFixed(1)}`;
+                    }
+                } else {
+                    tempD += ` L ${x.toFixed(1)} ${yTemp.toFixed(1)}`;
+                    smokeD += ` L ${x.toFixed(1)} ${ySmoke.toFixed(1)}`;
+                }
+            }
+
+            pathTemp.setAttribute("d", tempD);
+            pathSmoke.setAttribute("d", smokeD);
+        }
+
+        // Limpiar widgets y reestablecer barras a cero
+        function clearTelemetryMeters() {
+            const elBarTemp = document.getElementById("bar-temp");
+            const elBarSmoke = document.getElementById("bar-smoke");
+            const elBarRssi = document.getElementById("bar-rssi");
+            if (elBarTemp) elBarTemp.style.width = "0%";
+            if (elBarSmoke) elBarSmoke.style.width = "0%";
+            if (elBarRssi) elBarRssi.style.width = "0%";
+
+            historyBuffer = [];
+            updateHistoricalSparkline();
+        }
+
+        // Inicializador de Audio de Bajo Nivel para Alerta de Producción
+        function setupAudioCtx() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function startAcousticAlarm() {
+            if (isMuted || isSirenPlaying) return;
+            setupAudioCtx();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            isSirenPlaying = true;
+            osc = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+
+            // Modulación de frecuencia similar a sirena real contra ráfagas de fuego
+            let direction = true;
+            sirenIntervalId = setInterval(() => {
+                if (osc && isSirenPlaying) {
+                    const freq = direction ? 1200 : 800;
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    direction = !direction;
+                }
+            }, 300);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            gainNode.gain.setValueAtTime(0.06, audioCtx.currentTime); // Volumen cómodo para el operario
+            osc.start();
+
+            const btn = document.getElementById("btn-siren");
+            if (btn) {
+                btn.classList.remove("muted");
+                document.getElementById("siren-icon").innerText = "volume_up";
+                document.getElementById("siren-text").innerText = "ALARMA RETUMBANTE";
+            }
+        }
+
+        function stopAcousticAlarm() {
+            if (osc) {
+                try {
+                    osc.stop();
+                } catch (e) {}
+                osc = null;
+            }
+            if (sirenIntervalId) {
+                clearInterval(sirenIntervalId);
+                sirenIntervalId = null;
+            }
+            isSirenPlaying = false;
+
+            const btn = document.getElementById("btn-siren");
+            if (btn) {
+                btn.classList.remove("muted");
+                document.getElementById("siren-text").innerText = "SIRENA LISTA";
+            }
+        }
+
+        // Actuador manual del operario
+        function togglePhysicalSiren() {
+            isMuted = !isMuted;
+            const btn = document.getElementById("btn-siren");
+            const icon = document.getElementById("siren-icon");
+            const text = document.getElementById("siren-text");
+
+            if (isMuted) {
+                stopAcousticAlarm();
+                if (btn) btn.classList.add("muted");
+                if (icon) icon.innerText = "volume_off";
+                if (text) text.innerText = "SIRENA MUTED";
+                addLog("[SISTEMA] Alarma forzada a silencio por operario.");
+            } else {
+                if (btn) btn.classList.remove("muted");
+                if (icon) icon.innerText = "volume_up";
+                if (text) text.innerText = "SIRENA ACTIVA";
+                addLog("[SISTEMA] Alarma acústica armada.");
+                if (deviceState.temp > 40 || deviceState.humo > 700) {
+                    startAcousticAlarm();
+                }
+            }
+        }
+
+        // Método seguro para cerrar de forma absoluta todos los recursos y flujos seriales anteriores
+        async function disconnectSerial(logMessage = "[CONEXIÓN] Puerto serie desconectado.") {
+            try {
+                if (serialReader) {
+                    try {
+                        await serialReader.cancel();
+                    } catch (e) {
+                        console.debug("Error canceling serial reader:", e);
+                    }
+                    try {
+                        serialReader.releaseLock();
+                    } catch (e) {
+                        console.debug("Error releasing reader lock:", e);
+                    }
+                    serialReader = null;
+                }
+                
+                if (serialPort) {
+                    try {
+                        await serialPort.close();
+                    } catch (e) {
+                        console.debug("Error closing serial port:", e);
+                    }
+                    serialPort = null;
+                }
+            } catch (err) {
+                console.error("Error al desconectar:", err);
+            }
+
+            statusSerial = "Desconectado";
+            
+            const badge = document.getElementById("badge-serial");
+            if (badge) {
+                badge.className = "status-badge status-disconnected";
+                badge.innerText = "Desconectado";
+            }
+            
+            const btn = document.getElementById("btn-serial-action");
+            if (btn) {
+                btn.innerHTML = `<span class="material-icons-rounded" style="font-size: 18px;">usb</span> CONECTAR PUERTO`;
+            }
+
+            // Ocultar widgets de telemetría y desactivar alarma
+            const telemetryCard = document.getElementById("telemetry-card");
+            if (telemetryCard) {
+                telemetryCard.style.display = "none";
+            }
+            
+            if (nodeMarker) {
+                map.removeLayer(nodeMarker);
+                nodeMarker = null;
+            }
+
+            deviceState = { id: null, lat: 0.0, lng: 0.0, temp: 0.0, humo: 0, voltage: 0.0, rssi: 0, hasGps: false };
+            clearTelemetryMeters();
+            stopAcousticAlarm();
+            
+            const banner = document.getElementById("emergency-banner");
+            if (banner) {
+                banner.style.display = "none";
+            }
+
+            if (logMessage) {
+                addLog(logMessage);
+            }
+        }
+
+        // Conector Web Serial API real
+        async function togglePhysicalSerial() {
+            setupAudioCtx();
+
+            const badge = document.getElementById("badge-serial");
+            const btn = document.getElementById("btn-serial-action");
+
+            if (statusSerial === "Conectado") {
+                await disconnectSerial("[CONEXIÓN] Puerto serie desconectado por el usuario.");
+                return;
+            }
+
+            if (!("serial" in navigator)) {
+                addLog("[ERROR] Web Serial API no soportada en este navegador. Utilice Chrome de escritorio.");
+                alert("Web Serial no es compatible con este navegador. Por favor use Google Chrome, Opera o Edge en su ordenador.");
+                return;
+            }
+
+            try {
+                statusSerial = "Conectando";
+                badge.className = "status-badge status-connecting";
+                badge.innerText = "Conectando...";
+                addLog("[CONEXIÓN] Solicitando selección del puerto serial de la placa...");
+
+                serialPort = await navigator.serial.requestPort();
+                await serialPort.open({ baudRate: 115200 });
+
+                statusSerial = "Conectado";
+                badge.className = "status-badge status-connected";
+                badge.innerText = "Enlazado";
+                btn.innerHTML = `<span class="material-icons-rounded" style="font-size: 18px;">usb_off</span> DESCONECTAR`;
+                addLog("[CONEXIÓN] Conexión establecida a 115200 baudios.");
+
+                document.getElementById("telemetry-card").style.display = "flex";
+
+                startListeningSerialStream();
+            } catch (err) {
+                statusSerial = "Desconectado";
+                badge.className = "status-badge status-disconnected";
+                badge.innerText = "Error";
+                addLog("[FALTA] Error estableciendo enlace: " + err.message);
+                await disconnectSerial(null);
+            }
+        }
+
+        async function startListeningSerialStream() {
+            if (!serialPort || !serialPort.readable) return;
+            
+            const decoder = new TextDecoder("utf-8");
+            serialReader = serialPort.readable.getReader();
+            let incomingBuffer = "";
+
+            try {
+                while (true) {
+                    const { value, done } = await serialReader.read();
+                    if (done) {
+                        break;
+                    }
+
+                    if (value) {
+                        incomingBuffer += decoder.decode(value, { stream: true });
+                        let lines = incomingBuffer.split("\n");
+                        incomingBuffer = lines.pop(); // Guardar fragmento no cerrado
+
+                        for (let rawLine of lines) {
+                            rawLine = rawLine.trim();
+                            if (rawLine.length > 0) {
+                                addLog("📻 " + rawLine);
+                                interpretIncomingRawLine(rawLine);
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Stream reading error:", err);
+                await disconnectSerial("[SISTEMA] Conexión cerrada abruptamente (¿se desconectó el cable USB?).");
+            } finally {
+                if (serialReader) {
+                    try {
+                        serialReader.releaseLock();
+                    } catch (e) {}
+                    serialReader = null;
+                }
+            }
+        }
+
+        // Sanitización y decodificación directa del JSON (y fallback a Regex)
+        function interpretIncomingRawLine(line) {
+            // Eliminar caracteres de control ASCII invisibles procedentes del pipeline USB-UART
+            const filtered = line.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
+            
+            // 1. Intentar extracción de JSON mediante búsqueda de llaves {}
+            const firstBrace = filtered.indexOf("{");
+            const lastBrace = filtered.lastIndexOf("}");
+            
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                const jsonStr = filtered.substring(firstBrace, lastBrace + 1);
+                try {
+                    const parsed = JSON.parse(jsonStr);
+                    if (parsed && typeof parsed === "object") {
+                        processDecodedIoTData(parsed);
+                        return; // Procesado con éxito
+                    }
+                } catch (err) {
+                    // Ignorar error de JSON y probar con fallback de regex
+                }
+            }
+
+            // 2. Fallback: Parsear por expresiones regulares si no es un JSON completo o si falló
+            const fallbackData = {};
+            
+            // Buscar ID
+            const idMatch = filtered.match(/id\s*[:=]\s*["']?([a-zA-Z0-9_-]+)["']?/i);
+            if (idMatch) fallbackData.id = idMatch[1];
+
+            // Buscar coordenadas GPS 
+            const latMatch = filtered.match(/lat\s*[:=]\s*([\d.-]+)/i);
+            if (latMatch) fallbackData.lat = Number(latMatch[1]);
+            const lngMatch = filtered.match(/lng\s*[:=]\s*([\d.-]+)/i);
+            if (lngMatch) fallbackData.lng = Number(lngMatch[1]);
+
+            // Buscar temperatura (temp, t, temperatura, etc)
+            const tempMatch = filtered.match(/(?:temp|temperatura|temperature|t)\s*[:=]\s*([\d.-]+)/i);
+            if (tempMatch) fallbackData.temp = Number(tempMatch[1]);
+
+            // Buscar humo/smoke/gas (smoke, humo, gas, etc)
+            const smokeMatch = filtered.match(/(?:smoke|humo|gas|s)\s*[:=]\s*([\d.-]+)/i);
+            if (smokeMatch) fallbackData.smoke = Number(smokeMatch[1]);
+
+            // Buscar voltaje (v, volt, voltage, etc)
+            const voltMatch = filtered.match(/(?:v|voltage|volt|vcc)\s*[:=]\s*([\d.-]+)/i);
+            if (voltMatch) fallbackData.v = Number(voltMatch[1]);
+
+            // Buscar RSSI
+            const rssiMatch = filtered.match(/rssi\s*[:=]\s*([\d.-]+)/i);
+            if (rssiMatch) fallbackData.rssi = Number(rssiMatch[1]);
+
+            // Si pudimos rescatar al menos temperatura o humo, procesamos el paquete
+            if (fallbackData.temp !== undefined || fallbackData.smoke !== undefined || fallbackData.id !== undefined) {
+                processDecodedIoTData(fallbackData);
+            }
+        }
+
+        // Asignación directa de telemetría con extracción avanzada
+        function processDecodedIoTData(data) {
+            // Interceptar si el emisor envía los sensores empaquetados en un solo string dentro de "voltage" (o v / volt)
+            let posVolt = "";
+            if (data.voltage !== undefined && data.voltage !== null) {
+                posVolt = String(data.voltage).trim();
+            } else if (data.v !== undefined && data.v !== null) {
+                posVolt = String(data.v).trim();
+            } else if (data.volt !== undefined && data.volt !== null) {
+                posVolt = String(data.volt).trim();
+            }
+
+            // Formato exacto a buscar: "0.0C | Humo: 192"
+            if (posVolt && (posVolt.includes("C") || posVolt.includes("Humo"))) {
+                const regex = /([\d.-]+)\s*C\s*\|\s*Humo:\s*(\d+)/i;
+                const match = posVolt.match(regex);
+                if (match) {
+                    data.temp = parseFloat(match[1]);
+                    data.smoke = parseInt(match[2], 10);
+                } else {
+                    // Fallback manual por split
+                    const parts = posVolt.split("|");
+                    if (parts.length >= 2) {
+                        const tempStr = parts[0].replace(/[cC\s]/g, "").trim();
+                        const smokeStr = parts[1].replace(/[^0-9]/g, "").trim();
+                        const parsedT = parseFloat(tempStr);
+                        const parsedS = parseInt(smokeStr, 10);
+                        if (!isNaN(parsedT)) data.temp = parsedT;
+                        if (!isNaN(parsedS)) data.smoke = parsedS;
+                    }
+                }
+            }
+
+            // Mapeo seguro con asignación fuerte a numéricos (preservando estado previo para datos faltantes)
+            if (data.id !== undefined && data.id !== null) {
+                deviceState.id = String(data.id).trim();
+            }
+            if (data.lat !== undefined && data.lat !== null && !isNaN(Number(data.lat))) {
+                deviceState.lat = Number(data.lat);
+            }
+            if (data.lng !== undefined && data.lng !== null && !isNaN(Number(data.lng))) {
+                deviceState.lng = Number(data.lng);
+            }
+            
+            // Búsqueda flexible de temperatura en el paquete
+            const incomingTemp = data.temp !== undefined ? data.temp : (data.temperatura !== undefined ? data.temperatura : data.t);
+            if (incomingTemp !== undefined && incomingTemp !== null && !isNaN(Number(incomingTemp))) {
+                deviceState.temp = Number(incomingTemp);
+            }
+            
+            // Búsqueda flexible de humo en el paquete
+            const incomingSmoke = data.smoke !== undefined ? data.smoke : (data.humo !== undefined ? data.humo : data.s);
+            if (incomingSmoke !== undefined && incomingSmoke !== null && !isNaN(Number(incomingSmoke))) {
+                deviceState.humo = Number(incomingSmoke);
+            }
+            
+            // Búsqueda flexible de voltaje en el paquete
+            const incomingVolt = data.v !== undefined ? data.v : (data.voltage !== undefined ? data.voltage : data.volt);
+            if (incomingVolt !== undefined && incomingVolt !== null && !isNaN(Number(incomingVolt))) {
+                deviceState.voltage = Number(incomingVolt);
+            }
+            
+            // Búsqueda flexible de RSSI en el paquete
+            const incomingRssi = data.rssi !== undefined ? data.rssi : data.signal;
+            if (incomingRssi !== undefined && incomingRssi !== null && !isNaN(Number(incomingRssi))) {
+                deviceState.rssi = Number(incomingRssi);
+            }
+
+            // Almacenar punto de historial (limitar a maxHistoryPoints)
+            historyBuffer.push({ temp: deviceState.temp, humo: deviceState.humo, time: Date.now() });
+            if (historyBuffer.length > maxHistoryPoints) {
+                historyBuffer.shift();
+            }
+
+            // Actualizar panel lateral visual real con elementos de alta definición
+            document.getElementById("v-node-id").innerText = deviceState.id;
+            document.getElementById("v-voltage").innerText = deviceState.voltage > 0 ? deviceState.voltage.toFixed(2) + " V" : "-- V";
+
+            // Cálculos de porcentajes para las barras de progreso
+            // Rango DS16B20: 0°C a 70°C
+            const tempPercent = Math.max(0, Math.min(100, (deviceState.temp / 70) * 100));
+            // Rango MQ-5: 0 a 1200 PPM
+            const smokePercent = Math.max(0, Math.min(100, (deviceState.humo / 1200) * 100));
+            // Rango LoRa RSSI: -120 dBm a -30 dBm
+            const rssiPercent = Math.max(0, Math.min(100, Math.round(((deviceState.rssi + 120) / 90) * 100)));
+
+            // 1. Temperatura Widget actualizador
+            const elVTemp = document.getElementById("v-temp");
+            const elBarTemp = document.getElementById("bar-temp");
+            const elLabelTemp = document.getElementById("label-temp-status");
+            const elIconTemp = document.getElementById("icon-temp");
+
+            elVTemp.innerText = deviceState.temp !== 0 ? deviceState.temp.toFixed(1) + " °C" : "0.0 °C";
+            elBarTemp.style.width = tempPercent + "%";
+
+            elVTemp.className = "sensor-value";
+            elBarTemp.className = "meter-fill";
+            if (elIconTemp) elIconTemp.className = "material-icons-rounded sensor-icon";
+
+            if (deviceState.temp > 40) {
+                elVTemp.classList.add("text-red");
+                elBarTemp.classList.add("bg-red");
+                if (elIconTemp) elIconTemp.classList.add("text-red");
+                elLabelTemp.innerText = "CRÍTICO (Incendio)";
+                elLabelTemp.className = "text-red font-bold";
+            } else if (deviceState.temp > 30) {
+                elVTemp.classList.add("text-orange");
+                elBarTemp.classList.add("bg-orange");
+                if (elIconTemp) elIconTemp.classList.add("text-orange");
+                elLabelTemp.innerText = "Calentamiento";
+                elLabelTemp.className = "text-orange";
+            } else {
+                elVTemp.classList.add("text-green");
+                elBarTemp.classList.add("bg-green");
+                if (elIconTemp) elIconTemp.classList.add("text-green");
+                elLabelTemp.innerText = "Nominal Seguro";
+                elLabelTemp.className = "text-green";
+            }
+
+            // 2. Humo / Gas MQ-5 actualizador
+            const elVSmoke = document.getElementById("v-smoke");
+            const elBarSmoke = document.getElementById("bar-smoke");
+            const elLabelSmoke = document.getElementById("label-smoke-status");
+            const elIconSmoke = document.getElementById("icon-smoke");
+            const elLegendDotSmoke = document.getElementById("legend-dot-smoke");
+
+            elVSmoke.innerText = deviceState.humo + " PPM";
+            elBarSmoke.style.width = smokePercent + "%";
+
+            elVSmoke.className = "sensor-value";
+            elBarSmoke.className = "meter-fill";
+            if (elIconSmoke) elIconSmoke.className = "material-icons-rounded sensor-icon";
+
+            if (deviceState.humo > 700) {
+                elVSmoke.classList.add("text-red");
+                elBarSmoke.classList.add("bg-red");
+                if (elIconSmoke) elIconSmoke.classList.add("text-red");
+                elLabelSmoke.innerText = "FUEGO DETECTADO";
+                elLabelSmoke.className = "text-red font-bold";
+                if (elLegendDotSmoke) elLegendDotSmoke.style.backgroundColor = "var(--alert-red)";
+            } else if (deviceState.humo > 250) {
+                elVSmoke.classList.add("text-orange");
+                elBarSmoke.classList.add("bg-orange");
+                if (elIconSmoke) elIconSmoke.classList.add("text-orange");
+                elLabelSmoke.innerText = "Gas SOS / Humo";
+                elLabelSmoke.className = "text-orange";
+                if (elLegendDotSmoke) elLegendDotSmoke.style.backgroundColor = "var(--accent-orange)";
+            } else {
+                elVSmoke.classList.add("text-green");
+                elBarSmoke.classList.add("bg-green");
+                if (elIconSmoke) elIconSmoke.classList.add("text-green");
+                elLabelSmoke.innerText = "Atmósfera Segura";
+                elLabelSmoke.className = "text-green";
+                if (elLegendDotSmoke) elLegendDotSmoke.style.backgroundColor = "var(--accent-green)";
+            }
+
+            // 3. RSSI LoRa actualizador
+            const elVRssi = document.getElementById("v-rssi");
+            const elBarRssi = document.getElementById("bar-rssi");
+            const elLabelRssi = document.getElementById("label-rssi-status");
+
+            elVRssi.innerText = deviceState.rssi + " dBm";
+            elBarRssi.style.width = rssiPercent + "%";
+
+            elVRssi.className = "sensor-value";
+            elBarRssi.className = "meter-fill";
+
+            if (deviceState.rssi >= -65) {
+                elVRssi.classList.add("text-green");
+                elBarRssi.classList.add("bg-green");
+                elLabelRssi.innerText = "Excelente (Cercano)";
+                elLabelRssi.className = "text-green";
+            } else if (deviceState.rssi >= -90) {
+                elVRssi.classList.add("text-blue");
+                elBarRssi.classList.add("bg-blue");
+                elLabelRssi.innerText = "Enlace Estable";
+                elLabelRssi.className = "text-blue";
+            } else if (deviceState.rssi >= -110) {
+                elVRssi.classList.add("text-orange");
+                elBarRssi.classList.add("bg-orange");
+                elLabelRssi.innerText = "Señal Atenuada / Distante";
+                elLabelRssi.className = "text-orange";
+            } else {
+                elVRssi.classList.add("text-red");
+                elBarRssi.classList.add("bg-red");
+                elLabelRssi.innerText = "Crítico (Señal Débil)";
+                elLabelRssi.className = "text-red font-bold";
+            }
+
+            // Graficar el historial en el sparkline SVG
+            updateHistoricalSparkline();
+
+            // Validar existencia de cobertura y coordenadas GPS reales válidas
+            const isValidGps = (deviceState.lat !== 0.0 && deviceState.lng !== 0.0 && !isNaN(deviceState.lat) && !isNaN(deviceState.lng) && Math.abs(deviceState.lat) <= 90 && Math.abs(deviceState.lng) <= 180);
+
+            const badgeGps = document.getElementById("badge-gps");
+            const coordsRow = document.getElementById("gps-coords-row");
+            const valCoords = document.getElementById("v-coords");
+
+            if (isValidGps) {
+                deviceState.hasGps = true;
+                if (badgeGps) {
+                    badgeGps.className = "gps-status gps-fixed";
+                    badgeGps.innerText = "Fijado Real";
+                }
+                if (coordsRow && valCoords) {
+                    coordsRow.style.display = "flex";
+                    valCoords.innerText = `${deviceState.lat.toFixed(5)}, ${deviceState.lng.toFixed(5)}`;
+                }
+
+                // Determinar si hay emergencia térmica o gas químico activo de biomasa (>40°C o >700 PPM de humo)
+                const isDanger = (deviceState.temp > 40 || deviceState.humo > 700);
+
+                // Representación táctica del marcador dinámico en Leaflet
+                const isDangerStrCustom = isDanger ? 'danger' : '';
+                const nodeIcon = L.divIcon({
+                    className: 'node-map-div',
+                    html: `
+                        <div class="gps-marker-container">
+                            <div class="gps-pulse-ring ${isDangerStrCustom}"></div>
+                            <div class="gps-marker-core ${isDangerStrCustom}"></div>
+                        </div>
+                    `,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+
+                if (!nodeMarker) {
+                    nodeMarker = L.marker([deviceState.lat, deviceState.lng], { icon: nodeIcon }).addTo(map);
+                } else {
+                    nodeMarker.setLatLng([deviceState.lat, deviceState.lng]);
+                    nodeMarker.setIcon(nodeIcon);
+                }
+
+                // Popup interactivo moderno corregido
+                // Aseguramos que la alerta visual del globo cambie si temp > 40 o humo > 700 (umbral de fuego crítico)
+                const isPopupAlert = (deviceState.temp > 40 || deviceState.humo > 700);
+                
+                // Formatear ID numérico a 4 dígitos para que se muestre como '0001' si es un número, o mantener su formato original si no
+                let formattedId = deviceState.id || "0001";
+                if (!isNaN(formattedId)) {
+                    formattedId = String(formattedId).padStart(4, '0');
+                }
+
+                const popContent = `
+                    <div class="popup-wrapper">
+                         <div class="popup-header" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                             <div style="display: flex; align-items: center; gap: 4px;">
+                                 <span class="material-icons-rounded" style="font-size: 14px; color: ${isPopupAlert ? '#EF4444' : '#10B981'};">broadcast_on_personal</span>
+                                 <div class="popup-title ${isPopupAlert ? 'danger' : ''}">${formattedId}</div>
+                             </div>
+                             <div style="font-family: var(--font-mono); font-size: 9px; font-weight: 800; color: ${isPopupAlert ? 'var(--alert-red)' : 'var(--accent-green)'}; background-color: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.08);">
+                                 ${deviceState.temp.toFixed(1)}°C / ${deviceState.humo} PPM
+                             </div>
+                         </div>
+                        <div class="popup-row">
+                            <span class="popup-label">Temperatura:</span>
+                            <span class="popup-val ${isPopupAlert && deviceState.temp > 40 ? 'text-red font-bold text-red' : ''}">${deviceState.temp.toFixed(1)} °C</span>
+                        </div>
+                        <div class="popup-row">
+                            <span class="popup-label font-semibold">Nivel de Humo:</span>
+                            <span class="popup-val ${isPopupAlert && deviceState.humo > 700 ? 'text-red font-bold text-red' : ''}">${deviceState.humo} PPM</span>
+                        </div>
+                        <div class="popup-row">
+                            <span class="popup-label">Batería:</span>
+                            <span class="popup-val">${(typeof deviceState.voltage === 'number' && !isNaN(deviceState.voltage) && deviceState.voltage > 0) ? deviceState.voltage.toFixed(2) + " V" : "Línea Serie"}</span>
+                        </div>
+                        <div class="popup-row">
+                            <span class="popup-label">Señal:</span>
+                            <span class="popup-val">${deviceState.rssi} dBm</span>
+                        </div>
+                        <div class="popup-row" style="margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px; flex-direction: column; align-items: flex-start; gap: 4px;">
+                            <span class="popup-label" style="font-size: 8px; color: var(--accent-blue); text-transform: uppercase; font-weight: 700; display: flex; align-items: center; gap: 3px;">
+                                <span class="material-icons-rounded" style="font-size: 10px;">terminal</span>
+                                Monitor Serie Raw:
+                            </span>
+                            <div style="font-family: var(--font-mono); font-size: 8px; background-color: #030712; padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.08); width: 100%; word-break: break-all; color: #34D399; max-height: 38px; overflow-y: auto;">
+                                ${lastRawSerialLine}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                nodeMarker.bindPopup(popContent, {
+                    className: isPopupAlert ? 'leaflet-popup-alert' : ''
+                });
+
+                // Si el popup está abierto en este momento, actualizar su contenido y clase CSS en tiempo real
+                if (nodeMarker.getPopup() && nodeMarker.getPopup().isOpen()) {
+                    nodeMarker.getPopup().setContent(popContent);
+                    const popupElement = nodeMarker.getPopup().getElement();
+                    if (popupElement) {
+                        if (isPopupAlert) {
+                            popupElement.classList.add('leaflet-popup-alert');
+                        } else {
+                            popupElement.classList.remove('leaflet-popup-alert');
+                        }
+                    }
+                }
+
+                map.panTo([deviceState.lat, deviceState.lng]);
+
+            } else {
+                // GPS sin fijar satélites visibles
+                deviceState.hasGps = false;
+                if (badgeGps) {
+                    badgeGps.className = "gps-status gps-searching";
+                    badgeGps.innerText = "Buscando GPS";
+                }
+                if (coordsRow) {
+                    coordsRow.style.display = "none";
+                }
+
+                if (nodeMarker) {
+                    map.removeLayer(nodeMarker);
+                    nodeMarker = null;
+                }
+            }
+
+            // Gestionador de banners alertas críticas y zumbidos acústicos
+            const triggersAlert = (deviceState.temp > 40 || deviceState.humo > 700);
+            const banner = document.getElementById("emergency-banner");
+
+            if (triggersAlert) {
+                banner.style.display = "block";
+                startAcousticAlarm();
+            } else {
+                banner.style.display = "none";
+                stopAcousticAlarm();
+            }
+        }
+
+        // Cargar todo al inicio
+        window.onload = () => {
+            initStationMap();
+            
+            // Listener automático para desconexión física de hardware USB (ej. desenchufar cable de la placa)
+            if ("serial" in navigator) {
+                navigator.serial.addEventListener("disconnect", async (event) => {
+                    if (serialPort && event.target === serialPort) {
+                        await disconnectSerial("[SISTEMA] Dispositivo desconectado físicamente (cable USB extraído).");
+                    }
+                });
+            }
+        };
+    </script>
+</body>
+</html>

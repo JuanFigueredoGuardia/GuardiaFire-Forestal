@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuardiaFire - Monitoreo IoT</title>
+    
+    <!-- Leaflet.js CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #064e3b;
+            --primary: #10b981;
+            --secondary: #ecfdf5;
+            --border: #d1fae5;
+            --card-bg: #ffffff;
+            --shadow: rgba(16, 185, 129, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg: #0a0a0a;
+            --text: #ecfdf5;
+            --primary: #10b981;
+            --secondary: #064e3b;
+            --border: #064e3b;
+            --card-bg: #111827;
+            --shadow: rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.3s, color 0.3s;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border);
+            z-index: 100;
+            background: var(--bg);
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.5rem;
+            letter-spacing: -1px;
+        }
+
+        .logo span {
+            color: var(--primary);
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        button {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #btn-connect {
+            background-color: var(--primary);
+            color: #064e3b;
+        }
+
+        #btn-connect:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        #btn-theme {
+            background-color: var(--secondary);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        #sidebar {
+            width: 320px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            border-right: 2px solid var(--border);
+            overflow-y: auto;
+            background: var(--bg);
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .card-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .card-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .card-unit {
+            font-size: 1rem;
+            opacity: 0.5;
+            margin-left: 0.25rem;
+        }
+
+        #map {
+            flex: 1;
+            background: var(--secondary);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .dot.active {
+            background: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        #console {
+            background: #000;
+            color: #10b981;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            height: 150px;
+            overflow-y: auto;
+            margin-top: auto;
+            border: 1px solid #064e3b;
+        }
+
+        .console-line {
+            margin-bottom: 0.2rem;
+            opacity: 0.8;
+        }
+
+        /* Leaflet Fixes */
+        .leaflet-tile {
+            filter: grayscale(1);
+        }
+        [data-theme="dark"] .leaflet-tile {
+            filter: invert(1) hue-rotate(180deg) grayscale(1) brightness(0.8);
+        }
+    </style>
+</head>
+<body data-theme="dark">
+    <header>
+        <div class="logo">GUARDIA<span>FIRE</span></div>
+        <div class="controls">
+            <div class="status-indicator">
+                <div id="status-dot" class="dot"></div>
+                <span id="status-text">DESCONECTADO</span>
+            </div>
+            <button id="btn-theme" onclick="toggleTheme()">CAMBIAR TEMA</button>
+            <button id="btn-connect" onclick="connect()">CONECTAR ESTACIÓN BASE</button>
+        </div>
+    </header>
+
+    <main>
+        <div id="sidebar">
+            <div class="card">
+                <div class="card-label">Intensidad de Señal</div>
+                <div class="card-value"><span id="rssi-val">--</span><span class="card-unit">dBm</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">Voltaje Batería</div>
+                <div class="card-value"><span id="batt-val">--</span><span class="card-unit">V</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">Último Nodo</div>
+                <div id="node-id" style="font-family: 'JetBrains Mono', monospace; font-weight: bold;">ESPERANDO...</div>
+            </div>
+
+            <div id="console">
+                <div class="console-line">> Iniciando GuardiaFire v1.0...</div>
+                <div class="console-line">> Web Serial API Detectada.</div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+    </main>
+
+    <script>
+        let map, marker;
+        let port, reader;
+        let isDark = true;
+
+        // Inicializar Mapa
+        function initMap() {
+            map = L.map('map', {
+                center: [-31.399, -58.021], // Concordia, Entre Ríos
+                zoom: 14,
+                zoomControl: false
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            // Marcador inicial (oculto hasta recibir datos)
+            marker = L.marker([-31.399, -58.021]).addTo(map);
+        }
+
+        // Cambiar Tema
+        function toggleTheme() {
+            isDark = !isDark;
+            document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        }
+
+        // Consola Log
+        function log(msg) {
+            const consoleDiv = document.getElementById('console');
+            const line = document.createElement('div');
+            line.className = 'console-line';
+            line.textContent = `> [${new Date().toLocaleTimeString()}] ${msg}`;
+            consoleDiv.appendChild(line);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        // Web Serial API
+        async function connect() {
+            if (!('serial' in navigator)) {
+                alert('Tu navegador no soporta Web Serial API. Usa Chrome o Edge.');
+                return;
+            }
+
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 });
+                
+                document.getElementById('status-dot').classList.add('active');
+                document.getElementById('status-text').textContent = 'CONECTADO';
+                document.getElementById('btn-connect').disabled = true;
+                document.getElementById('btn-connect').textContent = 'LINK ACTIVO';
+                
+                log('Estación Base Conectada a 115200 bps');
+                
+                readLoop();
+            } catch (err) {
+                log('ERROR: ' + err.message);
+                console.error(err);
+            }
+        }
+
+        async function readLoop() {
+            const textDecoder = new TextDecoderStream();
+            const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+            const reader = textDecoder.readable.getReader();
+            let buffer = "";
+
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += value;
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop(); // Mantener el fragmento incompleto
+
+                    for (const line of lines) {
+                        try {
+                            if (line.trim()) {
+                                const data = JSON.parse(line.trim());
+                                updateUI(data);
+                            }
+                        } catch (e) {
+                            // Ignorar líneas malformadas
+                        }
+                    }
+                }
+            } catch (err) {
+                log('ERROR LECTURA: ' + err.message);
+            } finally {
+                reader.releaseLock();
+            }
+        }
+
+        function updateUI(data) {
+            // Data format: {"id":"NODO_UTN", "rssi":-75, "batt":"4.1V", "lat":-31.399, "lng":-58.021}
+            if (data.rssi) document.getElementById('rssi-val').textContent = data.rssi;
+            if (data.batt) document.getElementById('batt-val').textContent = data.batt.replace('V', '');
+            if (data.id) document.getElementById('node-id').textContent = data.id;
+            
+            if (data.lat && data.lng) {
+                const pos = [data.lat, data.lng];
+                marker.setLatLng(pos);
+                map.panTo(pos);
+                if (!marker.isPopupOpen()) {
+                    marker.bindPopup(`<b>${data.id}</b><br>RSSI: ${data.rssi} dBm`).openPopup();
+                }
+            }
+            
+            log(`Datos recibidos de ${data.id}`);
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+</html>
