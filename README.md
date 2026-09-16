@@ -55,7 +55,7 @@ Para publicar este proyecto sin necesidad de compilación o instalación de depe
   * **Google Chrome** (versión 89 o superior).
   * **Microsoft Edge** (versión 89 o superior).
   * **Opera** / **Brave** (con Web Serial habilitado).
-* *Nota:* En navegadores móviles (iOS Safari, Android Chrome) o Firefox de escritorio, la visualización del mapa, el catálogo de nodos y el historial funcionan con normalidad, pero la conexión física USB estará desactivada mostrando una advertencia informativa. Para pruebas sin hardware físico, la interfaz incluye el botón **Simular Lectura**.
+* *Nota:* En navegadores móviles (iOS Safari, Android Chrome) o Firefox de escritorio, la visualización del mapa, el catálogo de nodos y el historial funcionan con normalidad, pero la conexión física USB estará desactivada mostrando una advertencia informativa sobre la necesidad de usar Chrome o Edge en PC.
 
 ---
 

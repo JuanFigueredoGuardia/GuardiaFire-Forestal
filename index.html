@@ -108,14 +108,6 @@
           <line x1="17" y1="9" x2="23" y2="15"></line>
         </svg>
       </button>
-
-      <!-- Botón de Simulación de Prueba -->
-      <button class="btn btn-secondary" id="btn-sim-reading" onclick="simulateTestReading()" title="Genera una trama de prueba sin hardware conectado">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="5 3 19 12 5 21 5 3"></polygon>
-        </svg>
-        <span>Simular Lectura</span>
-      </button>
     </div>
   </header>
 
@@ -1531,40 +1523,6 @@
           navigator.vibrate([400, 200, 400, 200, 800]);
         } catch (e) {}
       }
-    }
-
-    // =========================================================================
-    // MODO DE SIMULACIÓN PARA PRUEBAS SIN HARDWARE FÍSICO
-    // =========================================================================
-    let simCounter = 1;
-    function simulateTestReading() {
-      initAudioContext();
-
-      // Elegir un nodo de la lista o usar "0001"
-      const targetId = nodesRegistry.length > 0 ? nodesRegistry[0].node_id : "0001";
-      
-      // Simular con 25% de probabilidad una lectura de alarma para probar la interfaz
-      const triggerAlarm = Math.random() < 0.35;
-
-      const mockJson = {
-        type: "reading",
-        reading: {
-          node_id: targetId,
-          mq5: triggerAlarm ? 2150 : Math.floor(380 + Math.random() * 150),
-          temperature_c: triggerAlarm ? 58.4 : Number((24 + Math.random() * 8).toFixed(1)),
-          battery_percent: triggerAlarm ? 18 : Math.floor(70 + Math.random() * 28),
-          battery_voltage: Number((3.7 + Math.random() * 0.45).toFixed(2)),
-          alarm: triggerAlarm,
-          counter: simCounter++
-        },
-        gateway: {
-          rssi: -90 - Math.floor(Math.random() * 15),
-          snr: Number((6.0 + Math.random() * 4.0).toFixed(1))
-        }
-      };
-
-      logSerial("[SIMULADOR] Inyectando trama de prueba generada:", "data");
-      processIncomingData(mockJson);
     }
 
     // =========================================================================
