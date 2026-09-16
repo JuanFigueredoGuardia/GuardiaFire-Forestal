@@ -11,6 +11,7 @@ El repositorio está diseñado para ejecutarse directamente como sitio estático
 * `index.html`: Estructura semántica, lógica en JavaScript vanilla, integración con Web Serial API, Leaflet cartográfico y Web Audio API.
 * `styles.css`: Hoja de estilos moderna con diseño oscuro táctico, paleta de colores para prevención de incendios y adaptabilidad responsiva para PC y dispositivos móviles.
 * `nodes.json`: Catálogo de configuración de nodos iniciales de demostración.
+* `favicon.svg`: Icono vectorial de fuego para la pestaña del navegador y acceso directo.
 * `README.md`: Documentación completa de instalación, despliegue y operación.
 
 ---

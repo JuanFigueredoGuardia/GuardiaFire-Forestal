@@ -142,16 +142,30 @@ body {
 }
 
 .brand-logo {
-  width: 38px;
-  height: 38px;
-  background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle at 50% 120%, rgba(239, 68, 68, 0.45) 0%, rgba(249, 115, 22, 0.25) 45%, #161f30 100%);
+  border: 1px solid rgba(249, 115, 22, 0.5);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  box-shadow: 0 0 12px var(--fire-orange-glow);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.35), inset 0 -4px 10px rgba(239, 68, 68, 0.2);
   flex-shrink: 0;
+  position: relative;
+}
+
+.brand-logo svg {
+  width: 28px;
+  height: 28px;
+  filter: drop-shadow(0 2px 6px rgba(234, 88, 12, 0.6));
+  animation: fire-flicker 3s ease-in-out infinite alternate;
+}
+
+@keyframes fire-flicker {
+  0% { transform: scale(0.97) rotate(-1deg); filter: drop-shadow(0 2px 5px rgba(234, 88, 12, 0.5)); }
+  50% { transform: scale(1.03) rotate(1deg); filter: drop-shadow(0 2px 10px rgba(249, 115, 22, 0.85)); }
+  100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 2px 6px rgba(239, 68, 68, 0.6)); }
 }
 
 .brand-title {

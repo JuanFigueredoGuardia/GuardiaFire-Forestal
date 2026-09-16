@@ -6,6 +6,10 @@
   <title>GuardiaFire - Monitoreo Forestal LoRa</title>
   <meta name="description" content="GuardiaFire: Sistema de monitoreo local de alarmas de incendio forestal vía LoRa y Web Serial API.">
 
+  <!-- Favicon de Fuego GuardiaFire -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="favicon.svg">
+
   <!-- Leaflet CSS desde CDN -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
@@ -37,10 +41,32 @@
   <!-- 2. Encabezado de la Aplicación -->
   <header class="app-header">
     <div class="brand-container">
-      <div class="brand-logo">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2c1.1 0 2 .9 2 2 0 1.5-1 2.5-1 3.5 0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5c0-1.8 1.5-3.5 3.5-3.5 1.1 0 2 .9 2 2 0 4.4-3.6 8-8 8s-8-3.6-8-8c0-1.1.9-2 2-2 2 0 3.5 1.7 3.5 3.5 0 .8.7 1.5 1.5 1.5s1.5-.7 1.5-1.5C9.5 6.5 8.5 5.5 8.5 4c0-1.1.9-2 2-2z"/>
-          <path d="M12 22c-4.97 0-9-4.03-9-9 0-3.53 2.04-6.58 5-8.05.5.95 1.25 1.75 2.19 2.31C8.82 8.42 8 9.94 8 11.64c0 2.21 1.79 4 4 4s4-1.79 4-4c0-1.7-.82-3.22-2.19-4.38.94-.56 1.69-1.36 2.19-2.31 2.96 1.47 5 4.52 5 8.05 0 4.97-4.03 9-9 9z"/>
+      <div class="brand-logo" title="GuardiaFire - Alerta Temprana de Fuego">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="headerFlameOuter" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stop-color="#b91c1c"/>
+              <stop offset="30%" stop-color="#dc2626"/>
+              <stop offset="65%" stop-color="#ea580c"/>
+              <stop offset="90%" stop-color="#f97316"/>
+              <stop offset="100%" stop-color="#facc15"/>
+            </linearGradient>
+            <linearGradient id="headerFlameInner" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stop-color="#f97316"/>
+              <stop offset="50%" stop-color="#fbbf24"/>
+              <stop offset="100%" stop-color="#fef08a"/>
+            </linearGradient>
+            <linearGradient id="headerFlameCore" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#ffffff"/>
+            </linearGradient>
+          </defs>
+          <!-- Llamarada exterior -->
+          <path d="M16 2C16 2 11.5 7.5 11.5 12C11.5 13.5 12 14.8 12.8 15.8C10.5 14.5 9 12 9 12C9 12 6 16 6 20.5C6 26 10.5 30 16 30C21.5 30 26 26 26 20.5C26 14.5 20.5 9 20.5 9C20.5 9 20.8 12 19 13.8C19 10 16 2 16 2Z" fill="url(#headerFlameOuter)"/>
+          <!-- Lengua de fuego intermedia -->
+          <path d="M16 13C14 15 13 17.5 13 20C13 21.2 13.4 22.3 14 23.2C13.2 22 13 20.5 13.8 19C14.5 17.8 16 16.5 16.5 15C17.5 17 18 19 18 20.5C18 21.2 17.8 22 17.3 22.8C18.4 22 19 20.8 19 19.5C19 17 17.5 14.5 16 13Z" fill="url(#headerFlameInner)"/>
+          <!-- Núcleo incandescente -->
+          <path d="M16 19C14.5 19 13.5 20.8 13.5 22.6C13.5 24.8 14.6 26.5 16 26.5C17.4 26.5 18.5 24.8 18.5 22.6C18.5 20.8 17.5 19 16 19Z" fill="url(#headerFlameCore)"/>
         </svg>
       </div>
       <div>
