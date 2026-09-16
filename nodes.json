@@ -1,0 +1,12 @@
+[
+  {
+    "node_id": "0001",
+    "name": "Nodo sector norte",
+    "lat": -31.394283,
+    "lng": -58.012240,
+    "zone": "Campo norte",
+    "location_description": "Junto al alambrado, a 200 metros de la entrada",
+    "notes": "Nodo de demostración",
+    "installed": true
+  }
+]

@@ -1,0 +1,1081 @@
+/* =========================================================================
+   GuardiaFire - Estación de Monitoreo Forestal IoT (Web Serial + Leaflet)
+   Hoja de estilos CSS independiente para GitHub Pages
+   ========================================================================= */
+
+:root {
+  --bg-main: #0a0e17;
+  --bg-card: #111827;
+  --bg-card-hover: #162032;
+  --bg-surface: #1f293d;
+  --border-color: #283548;
+  --border-focus: #f97316;
+
+  --color-text-main: #f3f4f6;
+  --color-text-muted: #94a3b8;
+  --color-text-subtle: #64748b;
+
+  --fire-orange: #f97316;
+  --fire-orange-glow: rgba(249, 115, 22, 0.35);
+
+  --status-normal: #10b981;
+  --status-normal-bg: rgba(16, 185, 129, 0.15);
+  
+  --status-warning: #eab308;
+  --status-warning-bg: rgba(234, 179, 8, 0.15);
+  
+  --status-alarm: #ef4444;
+  --status-alarm-bg: rgba(239, 68, 68, 0.2);
+  
+  --status-offline: #64748b;
+  --status-offline-bg: rgba(100, 116, 139, 0.15);
+  
+  --status-unknown: #3b82f6;
+  --status-unknown-bg: rgba(59, 130, 246, 0.15);
+
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.6);
+  --shadow-fire: 0 0 20px rgba(239, 68, 68, 0.45);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--color-text-main);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* =========================================================================
+   Banner de Alerta Forestal Activa
+   ========================================================================= */
+.alert-fire-banner {
+  background: linear-gradient(90deg, #b91c1c, #ef4444, #b91c1c);
+  background-size: 200% 200%;
+  animation: banner-flame 2s ease infinite;
+  color: #ffffff;
+  padding: 12px 16px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-shadow: var(--shadow-fire);
+  border-bottom: 2px solid #fca5a5;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+.alert-fire-banner.active {
+  display: flex;
+}
+
+@keyframes banner-flame {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Banner de Compatibilidad de Navegador */
+.browser-warning-banner {
+  background: #451a03;
+  color: #fed7aa;
+  border-bottom: 1px solid #ea580c;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  z-index: 999;
+}
+
+.browser-warning-banner.visible {
+  display: flex;
+}
+
+/* =========================================================================
+   Encabezado Principal
+   ========================================================================= */
+.app-header {
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  padding: 14px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  box-shadow: var(--shadow-sm);
+}
+
+.brand-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 0 12px var(--fire-orange-glow);
+  flex-shrink: 0;
+}
+
+.brand-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-tag {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: rgba(249, 115, 22, 0.18);
+  color: var(--fire-orange);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+}
+
+.brand-subtitle {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+/* Controles de Conexión en Header */
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.usb-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--status-offline);
+  transition: all 0.3s ease;
+}
+
+.status-dot.disconnected {
+  background-color: #ef4444;
+}
+
+.status-dot.connected {
+  background-color: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.status-dot.receiving {
+  background-color: #38bdf8;
+  box-shadow: 0 0 10px #38bdf8;
+  animation: pulse-dot 1s infinite alternate;
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.3); opacity: 1; }
+}
+
+/* Botones genéricos */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  user-select: none;
+  text-decoration: none;
+  min-height: 38px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px var(--fire-orange-glow);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--bg-surface);
+  border-color: var(--border-color);
+  color: var(--color-text-main);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: #3b4d68;
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ffffff;
+}
+
+.btn-icon-only {
+  padding: 8px;
+  min-width: 38px;
+  border-radius: var(--radius-md);
+}
+
+/* =========================================================================
+   Contenedor Principal de la App
+   ========================================================================= */
+.main-container {
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+}
+
+/* =========================================================================
+   Tarjetas Métricas del Dashboard
+   ========================================================================= */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.metric-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  border-color: #37475f;
+}
+
+.metric-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+}
+
+.metric-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.metric-total .metric-value { color: #f3f4f6; }
+.metric-total .metric-icon { background: rgba(255, 255, 255, 0.08); color: #cbd5e1; }
+
+.metric-normal .metric-value { color: var(--status-normal); }
+.metric-normal .metric-icon { background: var(--status-normal-bg); color: var(--status-normal); }
+
+.metric-alarm .metric-value { color: var(--status-alarm); }
+.metric-alarm .metric-icon { background: var(--status-alarm-bg); color: var(--status-alarm); }
+.metric-alarm.has-alarms {
+  border-color: var(--status-alarm);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.3);
+  animation: pulse-card-border 2s infinite;
+}
+
+@keyframes pulse-card-border {
+  0%, 100% { border-color: var(--status-alarm); }
+  50% { border-color: #fca5a5; }
+}
+
+.metric-offline .metric-value { color: var(--status-offline); }
+.metric-offline .metric-icon { background: var(--status-offline-bg); color: var(--status-offline); }
+
+/* =========================================================================
+   Layout Central: Mapa y Panel de Alertas
+   ========================================================================= */
+.map-section-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .map-section-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel-container {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(17, 24, 39, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-title {
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #f8fafc;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mapa Leaflet */
+.map-wrapper {
+  height: 440px;
+  width: 100%;
+  position: relative;
+  background-color: #0b111e;
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+/* Leyenda del Mapa */
+.map-legend {
+  padding: 10px 16px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Marcadores Leaflet personalizados */
+.custom-node-pin {
+  background: transparent;
+  border: none;
+}
+
+.node-pin-inner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+  border: 2px solid #ffffff;
+  transition: transform 0.2s ease;
+  position: relative;
+}
+
+.node-pin-inner.normal { background: var(--status-normal); }
+.node-pin-inner.warning { background: var(--status-warning); color: #000; }
+.node-pin-inner.offline { background: var(--status-offline); }
+.node-pin-inner.unknown { background: var(--status-unknown); }
+
+.node-pin-inner.alarm {
+  background: var(--status-alarm);
+  animation: pin-alarm-pulse 1s infinite alternate;
+}
+
+@keyframes pin-alarm-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 10px var(--status-alarm); }
+  100% { transform: scale(1.22); box-shadow: 0 0 25px #f87171; }
+}
+
+/* Popups de Leaflet Personalizados */
+.leaflet-popup-content-wrapper {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: 4px !important;
+}
+
+.leaflet-popup-tip {
+  background: #0f172a !important;
+}
+
+.popup-node-card {
+  padding: 6px 8px;
+  font-size: 0.82rem;
+  min-width: 210px;
+}
+
+.popup-node-card h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.popup-node-card .popup-zone {
+  font-size: 0.75rem;
+  color: var(--fire-orange);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.popup-node-card .popup-desc {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.popup-metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.76rem;
+  font-family: var(--font-mono);
+  margin-top: 6px;
+}
+
+.popup-metrics-table td {
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.popup-metrics-table td:last-child {
+  text-align: right;
+  font-weight: 700;
+}
+
+/* =========================================================================
+   Panel de Alertas Recientes
+   ========================================================================= */
+.alerts-list-container {
+  height: 440px;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 30px;
+  text-align: center;
+  color: var(--color-text-subtle);
+  gap: 8px;
+}
+
+.empty-state svg {
+  opacity: 0.4;
+  margin-bottom: 6px;
+}
+
+.alert-item-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--status-alarm);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  transition: transform 0.15s ease;
+}
+
+.alert-item-card.warning {
+  border-left-color: var(--status-warning);
+}
+
+.alert-item-card:hover {
+  transform: translateX(2px);
+}
+
+.alert-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.alert-node-title {
+  font-weight: 700;
+  color: #fff;
+}
+
+.alert-timestamp {
+  font-size: 0.72rem;
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+}
+
+.alert-message {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+/* =========================================================================
+   Tabla de Últimas Lecturas de Nodos
+   ========================================================================= */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.readings-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.84rem;
+}
+
+.readings-table th {
+  background-color: var(--bg-surface);
+  color: var(--color-text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.6px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.readings-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  color: var(--color-text-main);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+.readings-table td.cell-name {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.readings-table tr:hover td {
+  background-color: var(--bg-card-hover);
+}
+
+.readings-table tr.row-alarm td {
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.readings-table tr.row-alarm td.cell-name {
+  color: #fca5a5;
+}
+
+/* Badges de Estado */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.normal {
+  background: var(--status-normal-bg);
+  color: var(--status-normal);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-badge.warning {
+  background: var(--status-warning-bg);
+  color: var(--status-warning);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.status-badge.alarm {
+  background: var(--status-alarm-bg);
+  color: var(--status-alarm);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  animation: pulse-badge 1s infinite alternate;
+}
+
+@keyframes pulse-badge {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+.status-badge.offline {
+  background: var(--status-offline-bg);
+  color: var(--status-offline);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.status-badge.unknown {
+  background: var(--status-unknown-bg);
+  color: var(--status-unknown);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* =========================================================================
+   Sección: Administrar Nodos
+   ========================================================================= */
+.admin-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+}
+
+.form-input, .form-textarea {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+  font-size: 0.88rem;
+  color: #f8fafc;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+.form-input:focus, .form-textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--color-text-main);
+  cursor: pointer;
+  user-select: none;
+  margin-top: 4px;
+}
+
+.form-checkbox {
+  accent-color: var(--fire-orange);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.form-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* Lista de Nodos Registrados */
+.nodes-list-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.nodes-items-container {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 480px;
+}
+
+.node-item-row {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  transition: background-color 0.15s ease;
+}
+
+.node-item-row:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.node-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.node-item-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.node-badge-id {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: var(--fire-orange);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.node-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.node-item-meta {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.node-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-action-sm {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--color-text-muted);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-action-sm:hover {
+  color: #fff;
+  background: var(--bg-card-hover);
+}
+
+.btn-action-sm.delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* =========================================================================
+   Consola de Depuración Serial (Opcional / Colapsable)
+   ========================================================================= */
+.serial-log-container {
+  background: #090d16;
+  border-top: 1px solid var(--border-color);
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #94a3b8;
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.serial-log-line {
+  line-height: 1.4;
+}
+.serial-log-line.error { color: #f87171; }
+.serial-log-line.success { color: #34d399; }
+.serial-log-line.data { color: #38bdf8; }
+
+/* =========================================================================
+   Modal de Confirmación
+   ========================================================================= */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 2000;
+}
+
+.modal-backdrop.active {
+  display: flex;
+}
+
+.modal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  max-width: 420px;
+  width: 100%;
+  padding: 22px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.modal-body {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* =========================================================================
+   Pie de Página
+   ========================================================================= */
+.app-footer {
+  background-color: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  padding: 16px 20px;
+  font-size: 0.8rem;
+  color: var(--color-text-subtle);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.footer-credits a {
+  color: var(--fire-orange);
+  text-decoration: none;
+}
+.footer-credits a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 10px 14px;
+  }
+  .main-container {
+    padding: 12px;
+    gap: 16px;
+  }
+  .brand-title {
+    font-size: 1.2rem;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .map-wrapper {
+    height: 320px;
+  }
+  .metric-card {
+    padding: 12px 14px;
+  }
+  .metric-value {
+    font-size: 1.6rem;
+  }
+}
